@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+python-multipart
+requests
+python-dotenv
+
+# Whisper STT (as in the prototype notebook)
+git+https://github.com/openai/whisper.git
+
