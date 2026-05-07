@@ -1,4 +1,4 @@
-# Faseeh (فصيح)
+# Faseeh
 
 A touch-friendly Arabic vocabulary assistant.
 
@@ -37,4 +37,3 @@ A touch-friendly Arabic vocabulary assistant.
    - Serve `frontend/` (e.g., using VS Code Live Server) or open `frontend/index.html` if your browser allows it.
 
 If you want, I can add a single command to serve the frontend from FastAPI as well.
-
