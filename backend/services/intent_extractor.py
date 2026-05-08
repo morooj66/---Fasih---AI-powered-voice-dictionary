@@ -3,39 +3,42 @@ from typing import Any, Dict, Optional, Tuple
 from services.siwar_service import normalize_arabic
 
 
+def compact_text(text: str) -> str:
+    return normalize_arabic(text).replace(" ", "").replace("-", "").replace("/", "")
+
+
 def extract_intent_and_word(user_text: str, lexicon: Dict[str, Dict[str, Any]]) -> Tuple[str, Optional[str]]:
-    """
-    Extracts:
-    - intent: meaning/root/synonyms/antonyms/example
-    - word: the first lexicon key that appears inside the question
-
-    Prototype logic from the notebook.
-    """
-
     text = normalize_arabic(user_text)
+    compact_input = compact_text(user_text)
 
-    # Determine question type
-    if any(key in text for key in ["معنى", "ما معنى", "اش معنى"]):
+    if any(key in text for key in ["معني", "ما معني", "وش معني"]):
         intent = "meaning"
-    elif any(key in text for key in ["جذر", "اصل", "أصل"]):
+    elif any(key in text for key in ["جذر", "اصل"]):
         intent = "root"
     elif any(key in text for key in ["مرادف", "مرادفات"]):
         intent = "synonyms"
-    elif any(key in text for key in ["ضد", "عكس", "أضداد", "اضداد"]):
+    elif any(key in text for key in ["ضد", "عكس", "اضداد"]):
         intent = "antonyms"
-    elif any(key in text for key in ["مثال", "جملة"]):
+    elif any(key in text for key in ["مثال", "جمله"]):
         intent = "example"
     else:
         intent = "meaning"
 
-    # Find the word from the lexicon keys. The CSV lexicon uses diacritics in
-    # many lemmas, while user questions often omit them.
-    found_word: Optional[str] = None
-    for word, entry in lexicon.items():
-        candidates = {word, str(entry.get("word", ""))}
-        normalized_candidates = {normalize_arabic(candidate) for candidate in candidates}
-        if any(candidate and candidate in text for candidate in normalized_candidates):
-            found_word = word
-            break
+    # Search longer terms first so "شبكة عصبية" wins before "شبكة".
+    entries = sorted(
+        lexicon.items(),
+        key=lambda item: len(normalize_arabic(str(item[1].get("word") or item[0]))),
+        reverse=True,
+    )
 
-    return intent, found_word
+    for word, entry in entries:
+        candidates = {word, str(entry.get("word", ""))}
+        for candidate in candidates:
+            normalized_candidate = normalize_arabic(candidate)
+            compact_candidate = compact_text(candidate)
+            if not normalized_candidate:
+                continue
+            if normalized_candidate in text or compact_candidate in compact_input:
+                return intent, word
+
+    return intent, None

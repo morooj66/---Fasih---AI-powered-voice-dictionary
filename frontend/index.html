@@ -1,57 +1,113 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>فصيح - مساعد المعاني</title>
-    <link rel="stylesheet" href="./styles.css" />
-  </head>
-  <body>
-    <header class="header">
-      <h1>فصيح</h1>
-      <p class="subtitle">قل: فصيح ثم اسأل عن معنى الكلمة أو جذرها أو مرادفها.</p>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>فصيح | المعجم الناطق</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app" aria-label="تطبيق فصيح المعجم الناطق">
+    <header class="hero" aria-labelledby="appTitle">
+      <div class="logo" aria-hidden="true">ف</div>
+      <h1 id="appTitle">فصيح</h1>
+      <p class="subtitle">المعجم العربي الناطق والتفاعلي</p>
+      <p class="description">اسأل عن معنى كلمة، جذرها، مرادفاتها أو أضدادها بصوتك.</p>
     </header>
 
-    <main class="container">
-      <section class="card">
-        <h2 class="card-title">التحكم</h2>
+    <button
+      id="wakeBtn"
+      class="wake-card"
+      type="button"
+      aria-label="اضغط هنا لبدء فصيح وتشغيل المايك"
+      autofocus
+    >
+      <span class="wake-title">المس أي مكان لبدء فصيح</span>
+      <span class="wake-helper">لا تحتاج للبحث عن زر المايك. المس أي مكان في الشاشة لبدء فصيح.</span>
+      <span class="wake-note">فصيح سيرشدك صوتياً ثم يستمع لسؤالك.</span>
+    </button>
 
-        <div class="controls">
-          <button id="recordBtn" class="btn btn-primary" aria-pressed="false" type="button">
-            ابدأ التسجيل
-          </button>
+    <p id="statusText" class="status-pill" role="status" aria-live="assertive">جاهز للبدء</p>
 
-          <button id="sendBtn" class="btn btn-secondary" type="button" disabled>
-            إرسال
-          </button>
-        </div>
+    <section class="search-card" aria-labelledby="searchTitle">
+      <div class="section-heading">
+        <h2 id="searchTitle">اسأل فصيح</h2>
+        <p>اكتب سؤالك أو استخدم زر التحدث.</p>
+      </div>
 
-        <div class="file-row">
-          <label class="file-label" for="audioInput">أو اختر ملف صوت</label>
-          <input id="audioInput" type="file" accept="audio/*" />
-        </div>
+      <label for="wordInput">السؤال</label>
+      <div class="input-row">
+        <input
+          id="wordInput"
+          type="text"
+          autocomplete="off"
+          placeholder="مثال: ما معنى رصين؟"
+          aria-label="اكتب سؤالك هنا"
+        />
+        <button id="searchBtn" class="btn btn-primary" type="button" aria-label="ابحث عن الكلمة">ابحث</button>
+      </div>
 
-        <div id="status" class="status" aria-live="polite"></div>
-      </section>
+      <div class="voice-settings">
+        <label for="voiceSelect">الصوت العربي</label>
+        <select id="voiceSelect" aria-label="اختر صوت القراءة العربي">
+          <option value="">اختيار أفضل صوت تلقائياً</option>
+        </select>
+        <button id="testVoiceBtn" class="btn btn-neutral" type="button" aria-label="تجربة الصوت المختار">جرّب الصوت</button>
+      </div>
 
-      <section class="card">
-        <h2 class="card-title">النتيجة</h2>
+      <div class="actions" aria-label="أزرار التحكم">
+        <button id="speakBtn" class="btn btn-voice" type="button" aria-label="ابدأ التحدث بالصوت">
+          <span aria-hidden="true">🎙</span>
+          اضغط للتحدث
+        </button>
+        <button id="readBtn" class="btn btn-light" type="button" aria-label="إعادة قراءة النتيجة صوتياً">
+          <span aria-hidden="true">🔊</span>
+          أعد قراءة النتيجة
+        </button>
+        <button id="clearBtn" class="btn btn-neutral" type="button" aria-label="مسح السؤال والنتيجة">مسح</button>
+      </div>
+    </section>
 
-        <div class="result-row">
-          <div class="result-label">النص:</div>
-          <div id="transcript" class="result-value">-</div>
-        </div>
+    <section id="resultBox" class="result-card hidden" aria-labelledby="resultTitle">
+      <p class="result-kicker">نتيجة البحث</p>
+      <h2 id="resultTitle">نتيجة البحث</h2>
+      <h3 id="resultWord" class="result-word"></h3>
 
-        <div class="result-row">
-          <div class="result-label">الرد:</div>
-          <div id="responseText" class="result-value">-</div>
-        </div>
+      <div class="result-grid">
+        <article class="info-card info-card-wide">
+          <h4>المعنى</h4>
+          <p id="meaning"></p>
+        </article>
 
-        <audio id="audioPlayer" class="audio" controls preload="none"></audio>
-      </section>
-    </main>
+        <article class="info-card">
+          <h4>الجذر</h4>
+          <p id="root"></p>
+        </article>
 
-    <script src="./app.js" defer></script>
-  </body>
+        <article class="info-card">
+          <h4>المرادفات</h4>
+          <div id="synonyms" class="chip-list"></div>
+        </article>
+
+        <article class="info-card">
+          <h4>الأضداد</h4>
+          <div id="antonyms" class="chip-list"></div>
+        </article>
+
+        <article class="info-card info-card-wide">
+          <h4>مثال</h4>
+          <p id="example"></p>
+        </article>
+
+        <article class="info-card">
+          <h4>المصدر</h4>
+          <p id="source"></p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script src="mock-data.js"></script>
+  <script src="script.js"></script>
+</body>
 </html>
-

@@ -1,0 +1,9 @@
+.env
+backend/.env
+__pycache__/
+*.py[cod]
+node_modules/
+backend/static/audio/*.mp3
+backend/static/uploads/*
+!backend/static/audio/.gitkeep
+!backend/static/uploads/.gitkeep

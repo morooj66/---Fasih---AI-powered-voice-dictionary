@@ -1,60 +1,94 @@
+import base64
 import os
 from pathlib import Path
+from typing import Any
 
 import requests
 
 
 class TextToSpeech:
     """
-    ElevenLabs TTS (prototype notebook):
-    POST https://api.elevenlabs.io/v1/text-to-speech/{voice_id}
+    AiVOOV TTS.
+
+    API docs: https://github.com/AiVOOV/aivoov-api
+    Endpoint returns base64 audio, which we decode into a local MP3 file.
     """
 
     def __init__(
         self,
         api_key: str | None = None,
         voice_id: str | None = None,
-        model_id: str = "eleven_multilingual_v2",
     ):
-        self.api_key = api_key or os.getenv("ELEVENLABS_API_KEY")
-        self.voice_id = voice_id or os.getenv("ELEVENLABS_VOICE_ID", "CwhRBWXzGAHq8TQ4Fs17")
-        self.model_id = model_id
+        self.api_key = api_key or os.getenv("AIVOOV_API_KEY")
+        self.voice_id = voice_id or os.getenv("AIVOOV_VOICE_ID")
+        self.speaking_rate = os.getenv("AIVOOV_SPEAKING_RATE", "default")
+        self.pitch_rate = os.getenv("AIVOOV_PITCH_RATE", "default")
+        self.volume = os.getenv("AIVOOV_VOLUME", "default")
+        self.create_url = os.getenv("AIVOOV_CREATE_URL", "https://aivoov.com/api/v8/create")
+
+    def _session(self) -> requests.Session:
+        session = requests.Session()
+        # The local environment has broken proxy vars; AiVOOV should go direct.
+        session.trust_env = False
+        return session
 
     def _sanitize_error(self, message: str) -> str:
         if self.api_key:
             message = message.replace(self.api_key, "[redacted]")
         return message
 
+    def _extract_audio(self, data: Any) -> str | None:
+        if isinstance(data, dict):
+            return data.get("audio") or data.get("data") or data.get("base64")
+        return None
+
     def text_to_speech_arabic(self, text: str, output_path: str) -> None:
         if not self.api_key:
-            raise RuntimeError("ElevenLabs API key is missing.")
-
-        url = f"https://api.elevenlabs.io/v1/text-to-speech/{self.voice_id}"
-
-        headers = {
-            "xi-api-key": self.api_key,
-            "Content-Type": "application/json",
-        }
+            raise RuntimeError("AiVOOV API key is missing.")
+        if not self.voice_id:
+            raise RuntimeError("AiVOOV voice id is missing.")
 
         payload = {
-            "text": text,
-            "model_id": self.model_id,
-            "voice_settings": {
-                "stability": 0.65,
-                "similarity_boost": 0.85,
-                "style": 0.15,
-                "use_speaker_boost": True,
-            },
+            "voice_id[]": self.voice_id,
+            "transcribe_text[]": text.strip(),
+            "transcribe_ssml_pitch_rate[]": self.pitch_rate,
+            "transcribe_ssml_spk_rate[]": self.speaking_rate,
+            "transcribe_ssml_volume[]": self.volume,
+        }
+
+        headers = {
+            "X-API-KEY": self.api_key,
+            "Content-Type": "application/x-www-form-urlencoded",
         }
 
         try:
-            response = requests.post(url, headers=headers, json=payload, timeout=60)
-            if response.status_code != 200:
-                detail = self._sanitize_error(response.text[:300])
-                raise RuntimeError(f"ElevenLabs error {response.status_code}: {detail}")
+            response = self._session().post(
+                self.create_url,
+                headers=headers,
+                data=payload,
+                timeout=90,
+            )
         except requests.RequestException as exc:
-            raise RuntimeError(f"ElevenLabs request failed: {self._sanitize_error(str(exc))}") from exc
+            raise RuntimeError(f"AiVOOV request failed: {self._sanitize_error(str(exc))}") from exc
+
+        if response.status_code != 200:
+            raise RuntimeError(f"AiVOOV error {response.status_code}: {self._sanitize_error(response.text[:500])}")
+
+        try:
+            data = response.json()
+        except ValueError as exc:
+            raise RuntimeError(f"AiVOOV returned non-JSON response: {self._sanitize_error(response.text[:500])}") from exc
+
+        if isinstance(data, dict) and data.get("status") is False:
+            raise RuntimeError(f"AiVOOV generation failed: {self._sanitize_error(str(data)[:500])}")
+
+        audio_base64 = self._extract_audio(data)
+        if not audio_base64:
+            raise RuntimeError(f"AiVOOV response did not include audio: {self._sanitize_error(str(data)[:500])}")
+
+        if "," in audio_base64:
+            audio_base64 = audio_base64.split(",", 1)[1]
 
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-        with open(output_path, "wb") as f:
-            f.write(response.content)
+        with open(output_path, "wb") as file:
+            file.write(base64.b64decode(audio_base64))

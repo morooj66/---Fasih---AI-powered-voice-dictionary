@@ -13,15 +13,6 @@ class LexiconEntry:
 
 
 class LexiconService:
-    """
-    Loads the local JSON lexicon once and provides helper getters.
-    Prototype shape (from notebook):
-    {
-      "رصين": { "word": "...", "root": "...", "meanings": [ ... ] },
-      ...
-    }
-    """
-
     def __init__(self, lexicon_path: str | Path):
         self.lexicon_path = Path(lexicon_path)
         self._lexicon: Dict[str, Dict[str, Any]] = self._load()
@@ -29,6 +20,7 @@ class LexiconService:
     def _load(self) -> Dict[str, Dict[str, Any]]:
         if not self.lexicon_path.exists():
             raise FileNotFoundError(f"Lexicon not found: {self.lexicon_path}")
+
         with self.lexicon_path.open("r", encoding="utf-8") as f:
             data = json.load(f)
 
@@ -72,17 +64,7 @@ class LexiconService:
             return "، ".join(str(item).strip() for item in value if str(item).strip()) or "غير متوفر"
 
         root = str(value or "").strip()
-        if not root:
-            return "غير متوفر"
-
-        try:
-            parsed = json.loads(root)
-        except json.JSONDecodeError:
-            return root
-
-        if isinstance(parsed, list):
-            return "، ".join(str(item).strip() for item in parsed if str(item).strip()) or "غير متوفر"
-        return root
+        return root or "غير متوفر"
 
     def _normalize_word_list(self, value: Any) -> list[str]:
         if isinstance(value, list):

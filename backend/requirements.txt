@@ -3,7 +3,7 @@ uvicorn[standard]
 python-multipart
 requests
 python-dotenv
+openpyxl
 
-# Whisper STT (as in the prototype notebook)
-git+https://github.com/openai/whisper.git
-
+# Optional: install this only if you want POST /api/voice/ask audio transcription.
+# git+https://github.com/openai/whisper.git

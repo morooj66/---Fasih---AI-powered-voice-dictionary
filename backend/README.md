@@ -1,34 +1,30 @@
-# Backend (FastAPI)
+# Fasih Backend
 
-## Endpoints
-- `POST /api/voice/ask`
-  - Accepts `multipart/form-data` with field `audio`
-  - Returns JSON: transcript, intent, response text, and a URL to an MP3 audio response.
-
-- `POST /api/voice/ask_text`
-  - Accepts JSON `{ "text": "..." }`
-  - Skips STT and directly builds the response + generates TTS.
-
-## Requirements
-- Python 3.9+
-- System `ffmpeg` available in PATH.
-  - Whisper transcribes from audio; we also convert uploaded audio into WAV for consistency.
-
-## Setup
-```powershell
-cd backend
-pip install -r requirements.txt
-
-# create env file
-copy .env.example .env
-# edit .env with your ELEVENLABS_API_KEY
-```
+FastAPI backend copied from `morooj66/Fasyh-project-voice-` and adjusted for this frontend.
 
 ## Run
+
 ```powershell
-uvicorn app:app --reload --port 8000
+cd backend
+python -m pip install -r requirements.txt
+python -m uvicorn app:app --reload --port 8000
 ```
 
-## Note on the lexicon
-The prototype uses a small local `data/lexicon.json`. You can replace it with your own dataset and re-run without code changes.
+The frontend calls:
 
+```text
+POST http://127.0.0.1:8000/api/voice/ask_text
+```
+
+with JSON:
+
+```json
+{ "text": "ما معنى رصين" }
+```
+
+## Notes
+
+- The current frontend still uses browser SpeechRecognition and SpeechSynthesis for accessibility.
+- If the backend is not running, the frontend falls back to `mock-data.js`.
+- ElevenLabs TTS is optional. If `ELEVENLABS_API_KEY` is missing, the backend still returns text.
+- Whisper audio transcription is optional and only needed for `POST /api/voice/ask`.
