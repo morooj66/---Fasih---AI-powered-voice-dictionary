@@ -12,10 +12,8 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from services.intent_extractor import extract_intent_and_word
+from services.assistant_service import answer_audio_file, answer_text_question
 from services.lexicon_service import LexiconService
-from services.response_builder import build_response
-from services.siwar_service import has_wake_word, remove_wake_word
 from services.text_to_speech import TextToSpeech
 
 
@@ -155,9 +153,11 @@ async def ask_text(req: AskTextRequest) -> JSONResponse:
         raise HTTPException(status_code=503, detail="Server not ready yet")
 
     transcript = (req.text or "").strip()
-    cleaned_text = remove_wake_word(transcript) if has_wake_word(transcript) else transcript
-    intent, word = extract_intent_and_word(cleaned_text, lexicon_service.lexicon)
-    response_text = build_response(intent, word, lexicon_service.lexicon)
+    answer = answer_text_question(transcript, lexicon_service.lexicon)
+    cleaned_text = answer["cleanedText"]
+    intent = answer["intent"]
+    word = answer["word"]
+    response_text = answer["responseText"]
 
     file_id = uuid.uuid4().hex
     audio_url, tts_error = _safe_tts(response_text, file_id)
@@ -193,11 +193,12 @@ async def voice_ask(audio: UploadFile = File(...)) -> JSONResponse:
             shutil.copyfileobj(audio.file, f)
 
         wav_path = _convert_to_wav(upload_path)
-        stt_result = _get_speech_to_text().transcribe(str(wav_path))
-        transcript = (stt_result.get("text") or "").strip()
-        cleaned_text = remove_wake_word(transcript) if has_wake_word(transcript) else transcript
-        intent, word = extract_intent_and_word(cleaned_text, lexicon_service.lexicon)
-        response_text = build_response(intent, word, lexicon_service.lexicon)
+        answer = answer_audio_file(str(wav_path), _get_speech_to_text(), lexicon_service.lexicon)
+        transcript = answer["transcript"]
+        cleaned_text = answer["cleanedText"]
+        intent = answer["intent"]
+        word = answer["word"]
+        response_text = answer["responseText"]
         audio_url, tts_error = _safe_tts(response_text, file_id)
 
         return JSONResponse(

@@ -11,11 +11,7 @@ const testVoiceBtn = document.getElementById("testVoiceBtn");
 const resultBox = document.getElementById("resultBox");
 const resultWord = document.getElementById("resultWord");
 const meaning = document.getElementById("meaning");
-const root = document.getElementById("root");
-const synonyms = document.getElementById("synonyms");
-const antonyms = document.getElementById("antonyms");
 const example = document.getElementById("example");
-const source = document.getElementById("source");
 
 const BACKEND_ASK_TEXT_URL = "http://127.0.0.1:8000/api/voice/ask_text";
 
@@ -314,11 +310,7 @@ function renderChips(element, items) {
 function fillResult(result) {
   resultWord.textContent = result.word;
   meaning.textContent = result.meaning;
-  root.textContent = result.root && result.root !== "-" ? result.root : "غير متوفر";
-  renderChips(synonyms, result.synonyms);
-  renderChips(antonyms, result.antonyms);
   example.textContent = result.example;
-  source.textContent = result.source;
 }
 
 function showEmptyResult(message) {
